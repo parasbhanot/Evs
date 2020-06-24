@@ -1,0 +1,5 @@
+Kernal version,abc
+rootfs,MLO
+Bootloader1,uboot.img
+Bootloader2,ubootEnv.txt
+kernel,zImage

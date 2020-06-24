@@ -1,0 +1,23 @@
+diff --git '${BUILD_DIR}'uboot-linux4sam_5.7/lib/at91/at91.c '${BUILD_DIR}'uboot-linux4sam_5.7/lib/at91/at91.c
+index 52b4642..600f2e2 100644
+--- '${BUILD_DIR}'uboot-linux4sam_5.7/lib/at91/at91.c
++++ '${BUILD_DIR}'uboot-linux4sam_5.7/lib/at91/at91.c
+@@ -10,6 +10,17 @@
+ 
+ #include "atmel_logo_8bpp.h"
+ #include "microchip_logo_8bpp.h"
++#include "delta_logo_8bpp.h"
++
++void get_delta_logo_info(vidinfo_t *info)
++{
++	info->logo_width = DELTA_LOGO_8BPP_WIDTH;
++	info->logo_height = DELTA_LOGO_8BPP_HEIGHT;
++	info->logo_x_offset = DELTA_LOGO_8BPP_X_OFFSET;
++	info->logo_y_offset = DELTA_LOGO_8BPP_X_OFFSET;
++	info->logo_addr = (u_long)delta_logo_8bpp;
++}
++
+ 
+ void get_atmel_logo_info(vidinfo_t *info)
+ {
+

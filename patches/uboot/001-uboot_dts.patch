@@ -1,0 +1,41 @@
+diff --git '${BUILD_DIR}'uboot-linux4sam_5.7/arch/arm/dts/at91-sama5d2_xplained.dts '${BUILD_DIR}'uboot-linux4sam_5.7/arch/arm/dts/at91-sama5d2_xplained.dts
+index cdcc74f..c8ab282 100644
+--- '${BUILD_DIR}'uboot-linux4sam_5.7/arch/arm/dts/at91-sama5d2_xplained.dts
++++ '${BUILD_DIR}'uboot-linux4sam_5.7/arch/arm/dts/at91-sama5d2_xplained.dts
+@@ -48,22 +48,22 @@
+ 				pinctrl-0 = <&pinctrl_lcd_base &pinctrl_lcd_pwm &pinctrl_lcd_rgb666>;
+ 				status = "okay";
+ 				u-boot,dm-pre-reloc;
+-
+ 				display-timings {
+ 					u-boot,dm-pre-reloc;
+-					480x272 {
+-						clock-frequency = <9000000>;
+-						hactive = <480>;
+-						vactive = <272>;
+-						hsync-len = <41>;
+-						hfront-porch = <2>;
+-						hback-porch = <2>;
+-						vfront-porch = <2>;
+-						vback-porch = <2>;
+-						vsync-len = <11>;
++					800x480 {
++						clock-frequency = <33264586>;
++						hactive = <800>;
++						vactive = <480>;
++						hsync-len = <64>;
++						hfront-porch = <1>;
++						hback-porch = <64>;
++						vfront-porch = <1>;
++						vback-porch = <22>;
++						vsync-len = <23>;
+ 						u-boot,dm-pre-reloc;
+ 					};
+ 				};
++
+ 			};
+ 
+ 			qspi0: spi@f0020000 {
+
+
+

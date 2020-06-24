@@ -1,0 +1,12 @@
+diff --git '${BUILD_DIR}'uboot-linux4sam_5.7/include/atmel_lcd.h '${BUILD_DIR}'uboot-linux4sam_5.7/include/atmel_lcd.h
+index cb1aa26..e7d6521 100644
+--- '${BUILD_DIR}'uboot-linux4sam_5.7/include/atmel_lcd.h
++++ '${BUILD_DIR}'uboot-linux4sam_5.7/include/atmel_lcd.h
+@@ -53,5 +53,5 @@ typedef struct vidinfo {
+ 
+ void get_atmel_logo_info(vidinfo_t *info);
+ void get_microchip_logo_info(vidinfo_t *info);
+-
++void get_delta_logo_info(vidinfo_t *info);
+ #endif
+

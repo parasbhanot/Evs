@@ -1,0 +1,11 @@
+--- '${BUILD_DIR}'linux-linux4sam_5.8/drivers/usb/core/hub.c	2018-03-27 21:35:05.000000000 +0530
++++ '${BUILD_DIR}'linux-linux4sam_5.8/drivers/usb/core/hub.c	2018-11-27 14:47:05.097564926 +0530
+@@ -1362,7 +1362,7 @@
+ 
+ 	wHubCharacteristics = le16_to_cpu(hub->descriptor->wHubCharacteristics);
+ 	if (hub_is_superspeed(hdev)) {
+-		unit_load = 150;
++		unit_load = 500;
+ 		full_load = 900;
+ 	} else {
+ 		unit_load = 100;

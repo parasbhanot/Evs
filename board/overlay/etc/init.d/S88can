@@ -1,0 +1,29 @@
+#!/bin/sh
+### BEGIN INIT INFO
+### run pppd and gpio at begining 
+### END INIT INFO
+
+start()
+{
+ echo "Setting Mac address" 
+ /home/launchApps/Iconfig/IP_Config/set_Mac.sh >/dev/null 2>&1 
+ echo "SETUPING CAN0...."
+ip link set can0 up type can bitrate 250000&
+echo "starting watchdog from rootfs"
+
+chmod 777 /home/launchApps/Apps/TestApps/tR1/Myadc_reader &
+chmod 777 /home/launchApps/Apps/TestApps/tR1/Revised_Test_App &
+/home/launchApps/Apps/watchdog/watchdogRun >/dev/null 2>&1 & 
+/home/launchApps/Apps/TestApps/tR1/Myadc_reader >/dev/null 2>&1 &
+
+syslog-ng &
+}
+
+case "$1" in
+  start)
+    start
+  ;;
+  *)
+  ;;
+esac
+

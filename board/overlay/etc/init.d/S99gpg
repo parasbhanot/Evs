@@ -1,0 +1,33 @@
+#!/bin/sh
+### BEGIN INIT INFO
+### run pppd and gpio at begining 
+### END INIT INFO
+
+start()
+{
+ echo "importing gpg key...."
+ 
+ cat /home/launchApps/once.txt | while read LINE
+do
+if [ "$LINE" == "1" ]
+then
+        echo $LINE
+        echo "once script is begin executed $LINE" > /dev/kmsg
+        exec /home/launchApps/config.sh &
+	echo 2 > /home/launchApps/once.txt
+else
+        echo "not 1"
+        echo "once script is already executed $LINE" > /dev/kmsg
+fi
+done
+
+ echo "gpg key imported"
+}
+
+case "$1" in
+  start)
+    start
+  ;;
+  *)
+  ;;
+esac 

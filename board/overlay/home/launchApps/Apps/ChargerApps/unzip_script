@@ -1,0 +1,3 @@
+unzip -P evcs123 FWV110.zip -d v110
+chmod 700 v110/FW
+

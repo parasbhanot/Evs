@@ -1,0 +1,45 @@
+#!/bin/sh
+### BEGIN INIT INFO
+### turning off gsm before reboot
+### END INIT INFO
+
+start(){
+    
+    echo "setting apn from database"
+	/etc/ppp/peers/update.sh &
+	echo "Starting GSM Service from Init.d"
+	#/home/launchApps/Services/pppService >/dev/null 2>&1 &
+	/home/cman.sh >> /root/nlogs 2>&1 &
+}
+
+stop()
+{
+    echo "turing off charging app"
+    
+    pkill Charging_App.sh
+    pkill EvdcApp
+    
+	echo "Turing OFF GSM Modem...."
+	echo "setting gpio value..."
+	echo 1 > /sys/class/gpio/PD12/value
+	sleep 1s
+ 	echo 0 > /sys/class/gpio/PD12/value
+	#sleep 30s
+	pkill pppService
+	pkill StartupApp
+    xinit /home/launchApps/Apps/RebootApps/rR1/rebootApp -platform xcb -- -nocursor	
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  *)
+        echo "Usage: $0 {start|stop}"
+        exit 1
+esac
+
+exit $?
