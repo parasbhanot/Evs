@@ -1,0 +1,29 @@
+delsys_v106
+
+VERSION_HISTORY_V1.01
+
+CHANGELOG  Date14July2020, myLoginApp change to accomodate GSM USB     
+
+VERSION V1.02 
+
+CHANGELOG  Date16july2020, bug correction     
+
+VERSION V1.03 
+
+CHANGELOG  Date16july2020, /etc/init.d files changed       
+CHANGELOG  Date16july2020, install.sh changed       
+
+VERSION V1.04
+
+CHANGELOG  Date21july2020, login app changed added clearappdata
+CHANGELOG  Date21july2020, default multicharger app changed to build_1595272503
+
+VERSION V1.05
+
+CHANGELOG  Date21july2020, /etc/ppp/peers/update.sh bug on sql query removed
+CHANGELOG  Date21july2020, /delpkg/launcher/installapp.sh bug removed
+CHANGELOG  Date21july2020, delsysinstall.sh changed to preserve product configs while delsys update
+
+VERSION V1.06
+
+CHANGELOG  Date31july2020, Delservice/FWDD/* ....changed to incorporate retrival date

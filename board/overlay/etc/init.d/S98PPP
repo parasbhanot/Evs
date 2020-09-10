@@ -4,30 +4,67 @@
 ### END INIT INFO
 
 start(){
-    
-    echo "setting apn from database"
-	/etc/ppp/peers/update.sh &
-	echo "Starting GSM Service from Init.d"
-	#/home/launchApps/Services/pppService >/dev/null 2>&1 &
-	/home/cman.sh >> /root/nlogs 2>&1 &
+
+
+
+      mode=$(cat /home/launchApps/Iconfig/IP_Config/internetMode.txt)
+        
+        
+      if [ $mode == "P" ]; then
+
+
+	   echo "PPP is selected and hence running"
+
+           echo "setting apn from database"
+	   /etc/ppp/peers/update.sh &
+	   echo "Starting GSM Service from Init.d"
+	   
+	   #/home/cman.sh >> /root/plogs 2>&1 &
+
+
+	    /home/cman.sh | awk '{ print strftime("%Y-%m-%d %H:%M:%S: "), $0; fflush(); }' |tee -a /home/log/zlogs &
+
+       else
+	  echo "PPP is is not selected and hence not running"
+
+        fi 
 }
 
-stop()
-{
-    echo "turing off charging app"
-    
-    pkill Charging_App.sh
-    pkill EvdcApp
-    
-	echo "Turing OFF GSM Modem...."
-	echo "setting gpio value..."
-	echo 1 > /sys/class/gpio/PD12/value
-	sleep 1s
- 	echo 0 > /sys/class/gpio/PD12/value
-	#sleep 30s
-	pkill pppService
-	pkill StartupApp
-    xinit /home/launchApps/Apps/RebootApps/rR1/rebootApp -platform xcb -- -nocursor	
+stop(){
+
+        mode=$(cat /home/launchApps/Iconfig/IP_Config/internetMode.txt)
+        
+        if [ $mode == "P" ]; then
+        
+             echo "Turning off PPP gsm service"
+             pkill monitor.sh
+
+             echo "Turing off gsm using pulse from ppp stoping function"
+
+             echo "Pull modem power pin high"
+             echo 1 > /sys/class/gpio/PD12/value
+             sleep 1s
+             echo "Pull modem power pin low"
+             echo 0 > /sys/class/gpio/PD12/value
+             pkill X
+             sleep 60s
+
+             #xinit /home/launchApps/Apps/RebootApps/rR1/rebootApp -platform xcb -- -nocursor       
+
+        mode=$(python /root/check.py)
+
+        echo $mode
+
+        
+        if [ "$mode" = "Err" ]       
+        then
+           echo "gsm has sucessfully turned off"
+        else
+           echo "gsm has failed to turn off"
+        fi 
+
+    fi
+
 }
 
 case "$1" in

@@ -1,0 +1,30 @@
+#!/bin/sh
+
+start()
+{
+    /home/delsys/initialise.sh>/dev/null 2>&1 &  
+    /home/delsys/delservices/fwdd/fwd_dbusd>/dev/null 2>&1 & 
+}
+
+stop()
+{
+    pkill /home/delsys/delservices/fwdd/fwd_dbusd
+    pkill launchdefapp.sh
+    /home/delsys/delpkg/launcher/stopdefapp.sh
+    pkill myLogin
+    pkill StartupApp
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  *)
+        echo "Usage: $0 {start|stop}"
+        exit 1
+esac
+
+exit $?

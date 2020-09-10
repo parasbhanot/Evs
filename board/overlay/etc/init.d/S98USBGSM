@@ -1,0 +1,115 @@
+ 
+#!/bin/sh
+### BEGIN INIT INFO
+### turning off gsm before reboot
+### END INIT INFO
+
+start(){
+
+
+        mode=$(cat /home/launchApps/Iconfig/IP_Config/internetMode.txt)
+        
+           
+                echo 108 > /sys/class/gpio/export
+                echo out > /sys/class/gpio/PD12/direction
+        
+        if [ $mode == "U" ]; then
+ 	
+ 	
+           echo "Starting USB based GSM Service from Init.d"
+
+
+	   mode=$(python /root/check.py)
+
+           if [ "$mode" = "Err" ]        
+           then
+                echo "Since gsm is off , hence turing it on using pulse"
+
+
+                echo "Pull modem power pin high"
+                echo 1 > /sys/class/gpio/PD12/value
+                sleep 1s
+                echo "Pull modem power pin low"
+                echo 0 > /sys/class/gpio/PD12/value
+
+        else
+           echo "gsm is already on and hence doing nothing"
+	fi
+
+        sleep 20s
+
+        ip link set dev wwan0 down # you must bring the interface down else it will throw error
+        echo Y > /sys/class/net/wwan0/qmi/raw_ip
+        ip link set dev wwan0 up
+
+        sleep 30s
+
+        mmcli -m 0 --enable --timeout=120
+        mmcli -m 0 --simple-connect="apn=airtelgprs.com"
+        
+        sleep 10s
+        udhcpc -q -f -n -i wwan0
+
+        /root/monitor.sh | awk '{ print strftime("%Y-%m-%d %H:%M:%S: "), $0; fflush(); }' |tee -a /home/log/usb-gsmlogs &
+
+        else
+		echo "USB gsm service is not selected and hence not starting"      
+		 
+        fi 
+        
+        
+
+}
+
+stop()
+{
+
+        mode=$(cat /home/launchApps/Iconfig/IP_Config/internetMode.txt)
+        
+        if [ $mode == "U" ]; then
+        
+        echo "Turning off USB gsm service"
+        pkill monitor.sh
+
+        echo "Turing off gsm using pulse from USB stopping function "
+
+        echo "Pull modem power pin high"
+        echo 1 > /sys/class/gpio/PD12/value
+        sleep 1s
+        echo "Pull modem power pin low"
+        echo 0 > /sys/class/gpio/PD12/value
+
+        pkill X
+        sleep 60s
+        #xinit /home/launchApps/Apps/RebootApps/rR1/rebootApp -platform xcb -- -nocursor       
+
+        mode=$(python /root/check.py)
+
+        echo $mode
+
+        
+        if [ "$mode" = "Err" ]       
+        then
+           echo "gsm has sucessfully turned off"
+        else
+           echo "gsm has failed to turn off"
+        fi 
+
+    fi
+
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  *)
+        echo "Usage: $0 {start|stop}"
+        exit 1
+esac
+
+exit $?
+

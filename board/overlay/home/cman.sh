@@ -2,7 +2,7 @@
 
 <<NOTE1
 
-In pc ppp=eth and eth=wifi
+In pc ppp=eth and eth=wifi [Version v11.O]
 
 NOTE1
 
@@ -12,6 +12,12 @@ ping_state="NULL"
 failCount=0
 pregister="NULL"
 pip="google.com"
+
+MASTER_PING_CHECK_TIME="600s"
+SLAVE_PING_CHECK_TIME="180s"
+PPPD_REBOOT_COUNT=1
+PING_RECHECK="30s"
+TRY_COUNT=0
 
 initialize_modem () {
     
@@ -23,6 +29,9 @@ initialize_modem () {
        
         echo 108 > /sys/class/gpio/export
         echo out > /sys/class/gpio/PD12/direction
+
+	echo 109 > /sys/class/gpio/export
+	echo out > /sys/class/gpio/PD13/direction
         echo "initialize_modem complete"
        
   fi
@@ -61,45 +70,52 @@ turnon_pppd () {
 
 on_off_modem_pulse () {
 
- if [[ ${machine} == "pc" ]]
- then
-        echo "I am on pc and hence cannot pulse modem"
-  else
-        echo "Pull modem power pin high"
-        echo 1 > /sys/class/gpio/PD12/value
-        sleep 1s
-        echo "Pull modem power pin low"
-        echo 0 > /sys/class/gpio/PD12/value
-  fi
+ 
+	 mode=$(python /root/check.py)
+
+           if [ "$mode" = "Err" ]
+           then
+                echo "Since gsm is off , hence turing it on using pulse"
+
+
+                echo "Pull modem power pin high"
+                echo 1 > /sys/class/gpio/PD12/value
+                sleep 1s
+                echo "Pull modem power pin low"
+                echo 0 > /sys/class/gpio/PD12/value
+
+        else
+           echo "gsm is already on and hence doing nothing"
+	fi
 
 }
 
 turnon_modem () {
     
-    echo "starting modem for the first time"
     if [[ ${machine} == "pc" ]]
     then
         echo "I am on pc and hence cannot turnon_modem"
     else
         on_off_modem_pulse
-	echo "wait started for 60s between turn on and pppd start"
-	sleep 60s 
-	echo "wait ended for 60s between turn on and pppd start"
-	#jeet
-        stty 115200 -F /dev/ttyS3
-        echo "AT" > /dev/ttyS3
-        echo "AT+IPR=460800" > /dev/ttyS3
-        sleep 2s    	  
-        #jeet	
-	turnon_pppd
+        echo "wait started for 60s between turn on and pppd start"
+        sleep 60s 
+        echo "wait ended for 60s between turn on and pppd start"
+
+        echo "setting new baudrate started X"
+        /root/pyScan.py
+        echo "setting new baudrate ended X"
+	sleep 20s 
+        turnon_pppd
     fi
 }
+
+
 
 # restart funcions 
 restart_pppd () {
 
   echo "restart sequence started"
-  echo "turning off ppd"
+  echo "turning off pppd"
   turnoff_pppd
   echo "wating 5s before restart pppd"
   sleep 5s
@@ -108,10 +124,29 @@ restart_pppd () {
   echo "restart sequence ended"
 }
 
+restart_alternate_modem(){
+
+	echo "restarting  modem started"
+	echo 1 > /sys/class/gpio/PD13/value
+	sleep 0.3s
+	echo 0 > /sys/class/gpio/PD13/value
+	echo "restarting modem ended"
+
+	echo "60s wait started to set the new baudrate"
+    	sleep 60s
+    	echo "60s wait ended to set the new baudrate"
+    	echo "setting new baudrate started Y"
+    	/root/pyScan.py
+    	echo "setting new baudrate ended Y"
+	echo "waiting 20s before starting pppd started"
+    	sleep 20s
+	echo "wating 20s before starting pppd ended"
+}
+
 restart_modem(){
 
     echo "restarting modem started"
-    echo "turning off modem"
+    echo "turning off modem"4
     on_off_modem_pulse # turn off
     echo "60s wait started between restart sequence"
     sleep 60s
@@ -120,37 +155,26 @@ restart_modem(){
     on_off_modem_pulse # turn on
     echo "restarting modem ended"
 
-    #jeet
-    stty 115200 -F /dev/ttyS3
-    echo "AT" > /dev/ttyS3
-    echo "AT+IPR=460800" > /dev/ttyS3
-    sleep 2s    	  
-    #jeet		
+    echo "60s wait started to set the new baudrate" 
+    sleep 60s
+    echo "60s wait ended to set the new baudrate"
+	
+    echo "setting new baudrate started Y"
+    /root/pyScan.py	
+    echo "setting new baudrate ended Y"
+    sleep 20s
 }
 
 restart_all () {
 
    echo "restart all sequence started"
    turnoff_pppd
-   restart_modem
+   restart_alternate_modem
    turnon_pppd
    echo "restart all sequence ended"
 }
 
 # check functions
-
-get_ethernet_state () {
-
-echo "getting the ethernet connection state"
-
-  if [[ ${machine} == "pc" ]]
-  then
-           echo "i am on pc and will tell the pc ethernet state"
- 		   state=$(cat /sys/class/net/eno1/operstate)
-  else
-		   state=$(cat /sys/class/net/eth0/operstate)
-  fi
-}
 
 check_ppp_state () {
 
@@ -177,11 +201,31 @@ check_ppp_state () {
 check_ping () {
 
   if  [[ "$machine" == "pc" ]]; then
-      ping -I wlp1s0 -s 10 -c 1 -w 1 "$pip" >/dev/null 2>&1
+      ping -I wlp1s0 -s 10 -c 20 -w 60 "$pip" >/dev/null 2>&1
       echo $?
   else
-      ping -I ppp0 -s 10 -c 1 "$pip" >/dev/null 2>&1
-      echo $?
+      ping -I ppp0 -s 10 -c 20 -w 60  "$pip" >/dev/null 2>&1
+
+      # echo $? #previously
+      ret=$?
+
+      if [ $ret -ne 0 ]
+      then
+
+        state=$(cat /tmp/evdcapp_sconn_state.txt)
+
+	sleep $PING_RECHECK
+
+	if [[ ${state} == "----" ]]
+	then
+		echo 1
+	else
+		echo 0
+	fi
+      else
+      	echo 0
+      fi
+      
   fi
 
 }
@@ -209,61 +253,63 @@ set_gsm_priority () {
     fi
 }
 
-check_and_set_priority () {
-
-  get_ethernet_state
-
-  if [[ "$state" = "up" ]]
-  then
-       echo "ethernet is connected and hence setting gsm priority"
-       set_gsm_priority
-  else
-       echo "ethernet is not connected"
-       echo "No need to set the priority"
-  fi
-}
-
 # Main functions 
 
 try_and_recover () {
 
   echo "try and recover started"
 
-  restart_pppd
-  #check_and_set_priority
-  set_gsm_priority
-  ((failCount++))
-
-  for ((var = 0; var < 3; var++))
+  for ((var = 0; var < $PPPD_REBOOT_COUNT; var++))
   do
-      ping_state=$(check_ping)
+  
+      restart_pppd
+      set_gsm_priority
 
+      
+      check_ping
+      
+      echo "pppd has been restarted, waiting started for $SLAVE_PING_CHECK_TIME to check the ping again"
+      sleep $SLAVE_PING_CHECK_TIME
+      echo "pppd has been restarted , waiting ended for $SLAVE_PING_CHECK_TIME to check the ping again"
+         
+      ping_state=$(check_ping)
       if [[ $ping_state -eq 0 ]]
       then
-           echo "ping passed"
-           echo "reconnection successful"
+           echo "ping passed after pppd restart"
            failCount=0
            break
+           
       else
-         echo "ping failed"
-         echo "reconnection failed"
-         restart_pppd
-         #check_and_set_priority
-	 set_gsm_priority
-         ((failCount++))
+      
+           echo "ping failed even after pppd restart"
+           ((failCount++))
 
-	 echo "wating sarted for 60s between each ping check and pppd restart"
-	 sleep 60s
-	 echo "waiting ended for 60s between each ping check and pppd restar"
       fi
   done
 
-  if [[ ${failCount} -eq 4 ]]
+  
+  if [[ ${failCount} -ge $PPPD_REBOOT_COUNT ]]
   then
-       echo "pppd has restarted 4 times and hence modem is gonna restart"
+       echo "pppd has restarted $((PPPD_REBOOT_COUNT+1)) times and hence modem is gonna restart"
        restart_all
-       #check_and_set_priority
        set_gsm_priority 
+       
+       check_ping
+       
+       echo "gsm modem has been restarted, waiting started for $SLAVE_PING_CHECK_TIME to check the ping again"
+       sleep $SLAVE_PING_CHECK_TIME
+       echo "gsm modem has been restarted , waiting ended for $SLAVE_PING_CHECK_TIME to check the ping again"
+
+       ping_state=$(check_ping)
+
+       if [[ "$ping_state" -eq 0 ]]
+       then
+       	  echo "ping passed after restarting modem"
+	  
+       else
+            echo "ping has failed even after restarting modem"
+       fi 
+       
        failCount=0
   fi
 }
@@ -271,33 +317,72 @@ try_and_recover () {
 
 main () {
 
-    
+    echo "Launching Cman version v12.O"
+
     initialize_modem
     echo "turning on modem"
     turnon_modem
-    echo "setting priority"
-
-    #check_and_set_priority
     set_gsm_priority
+    
+    echo "wating for 300s before first ping check"
+    sleep 300s
 
     echo "starting gsm connection manger"
 
     while [[ true ]]
     do
-    ping_state=$(check_ping)
+    	ping_state=$(check_ping)
 
-    if [[ "$ping_state" -eq 0 ]]
-    then
-        echo "ping passed"
-    else
-        echo "ping failed and hence i will try to reconnect"
-        try_and_recover
-    fi
-    sleep 300s # 5min sleep
+
+    	if [[ "$ping_state" -eq 0 ]]
+    	then
+
+		echo "ppp ping passed and hence checking normal ping"
+
+                ping -s 10 -c 20 -w 60  "$pip" >/dev/null 2>&1
+                pret=$?
+
+	        if [[ "$pret" -eq 0 ]]
+		then
+
+        	   echo "normal ping passed"
+        	   TRY_COUNT=0
+
+	        else
+			echo "normal ping failed hence setting priority"
+                        route add default dev ppp0
+	        fi
+        	
+    	else
+        	echo "ppp ping failed "
+        	
+            ((TRY_COUNT++))
+            
+            if [[ "$TRY_COUNT" -lt 6   ]] 
+            then
+                try_and_recover
+            fi 
+            
+            if [[ "$TRY_COUNT" -gt 60 ]] 
+            then 
+            
+                echo "ping is failed from last $TRY_COUNT try_counts"
+                readline=$(cat /tmp/evdcapp_state.txt)
+
+                if [[ "$readline" = "idle" ]]
+                then
+                    echo "state is idle so it is safe to reboot the system"
+                    reboot
+                else 
+                    echo "12hrs has not passed but no charging is going on  so cannot reboot the system" 
+                fi
+            
+            fi
+        	
+    	fi
+    	sleep $MASTER_PING_CHECK_TIME
     done
 
 }
 
 main
-
-

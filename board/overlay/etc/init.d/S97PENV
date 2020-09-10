@@ -1,0 +1,17 @@
+#!/bin/sh
+### BEGIN INIT INFO
+### run pppd and gpio at begining 
+### END INIT INFO
+
+start()
+{
+printenv >> /tmp/env.txt
+}
+
+case "$1" in
+  start)
+    start
+  ;;
+  *)
+  ;;
+esac 

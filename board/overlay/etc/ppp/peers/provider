@@ -13,7 +13,7 @@ hide-password
 # The phone is not required to authenticate
 noauth
 # Debug info from pppd
-debug
+#debug
 # If you want to use the HSDPA link as your gateway
 #defaultroute # modified
 
@@ -29,7 +29,7 @@ local
 # For sanity, keep a lock on the serial line
 lock
 modem
-dump
+#dump
 nodetach
 # Hardware flow control
 nocrtscts
